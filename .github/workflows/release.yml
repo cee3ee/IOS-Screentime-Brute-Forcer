@@ -2,8 +2,9 @@ name: Release RP2040 Firmware
 
 on:
   push:
-    tags:
-      - 'v*' # Triggers on tags like v1.0.0, v0.2.1
+    branches:
+      - "main"
+  workflow_dispatch:
 
 permissions:
   contents: write # Required to create releases and upload assets
@@ -15,14 +16,53 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
+          if [[ "$COMMIT_MESSAGE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+)([[:space:]]|$) ]]; then
+            NEW_TAG="${BASH_REMATCH[1]}"
+            echo "Using custom tag from commit message: $NEW_TAG"
+          else
+            LATEST_TAG="$(git tag -l 'v*' --sort=-version:refname | head -n 1)"
+            if [[ -z "$LATEST_TAG" ]]; then
+              LATEST_TAG="v1.0.0"
+            fi
+
+            VERSION="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+            PATCH=$((PATCH + 1))
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+            echo "Auto-incremented tag from $LATEST_TAG to $NEW_TAG"
+          fi
+
+          if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+            echo "Tag $NEW_TAG already exists and will be reused."
+          else
+            git tag "$NEW_TAG"
+            git push origin "$NEW_TAG"
+            echo "Created and pushed tag: $NEW_TAG"
+          fi
+
+          echo "tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Compile Arduino Sketch
         uses: arduino/compile-sketches@v1
         with:
-          fqbn: rp2040:rp2040:rpipicow
+          fqbn: rp2040:rp2040:rpipicow:ipbtstack=ipv4btcble
           platforms: |
             - name: "rp2040:rp2040"
               source-url: "https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json"
+          libraries: |
+            - name: KeyboardBLE
+            - name: Adafruit GFX Library
+            - name: Adafruit SSD1306
           sketch-paths: |
             - .
           cli-compile-flags: |
@@ -38,11 +78,13 @@ jobs:
             exit 1
           fi
           echo "Found: $UF2_FILE"
-          cp "$UF2_FILE" release-assets/firmware-${{ github.ref_name }}.uf2
+          cp "$UF2_FILE" release-assets/firmware-${{ steps.release_tag.outputs.tag }}.uf2
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Release ${{ steps.release_tag.outputs.tag }}
           files: release-assets/*.uf2
           generate_release_notes: true
           draft: false

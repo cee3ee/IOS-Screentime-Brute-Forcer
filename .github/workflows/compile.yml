@@ -28,7 +28,7 @@ jobs:
             - name: Adafruit SSD1306
           # Path to your sketch directory containing the .ino file
           sketch-paths: |
-            - .
+            - IOS-Screentime-Brute-Forcer.ino
           # Uncomment if additional dependencies are not bundled
           # libraries: |
           #   - name: KeyboardBLE

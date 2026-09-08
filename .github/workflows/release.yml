@@ -64,7 +64,7 @@ jobs:
             - name: Adafruit GFX Library
             - name: Adafruit SSD1306
           sketch-paths: |
-            - .
+            - IOS-Screentime-Brute-Forcer.ino
           cli-compile-flags: |
             - --export-binaries
 

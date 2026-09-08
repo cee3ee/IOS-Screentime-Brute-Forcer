@@ -70,16 +70,43 @@ void setup() {
         char combo[5];
         snprintf(combo, sizeof(combo), "%04d", i);
 
-        // Display current combo on OLED
+        // Calculate progress percentage
+        int progress = (i * 100) / 10000;   // integer 0-100
+
+        // --- Draw on OLED ---
         display.clearDisplay();
+
+        // Title
+        display.setTextSize(1);
         display.setCursor(0, 0);
         display.println("PicoKey");
+
+        // Status
+        display.setCursor(0, 8);
         display.println("Typing:");
-        display.setTextSize(2);   // bigger font for combo
-        display.setCursor(0, 30);
+
+        // Current combo (large font)
+        display.setTextSize(2);
+        display.setCursor(0, 16);
         display.println(combo);
-        display.setTextSize(1);   // reset to small font
+
+        // Progress percentage (small font above bar)
+        display.setTextSize(1);
+        display.setCursor(0, 34);
+        display.print(progress);
+        display.print("%");
+
+        // Progress bar outline
+        display.drawRect(0, 42, 128, 12, SSD1306_WHITE);
+
+        // Progress bar fill (inner width 126, offset by 1 pixel)
+        int barWidth = (i * 126) / 10000;
+        if (barWidth > 0) {
+            display.fillRect(1, 43, barWidth, 10, SSD1306_WHITE);
+        }
+
         display.display();
+        // --- End OLED drawing ---
 
         // Send combo via BLE keyboard
         for (int j = 0; j < 4; j++) {

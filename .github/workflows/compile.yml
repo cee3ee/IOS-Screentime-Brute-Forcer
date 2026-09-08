@@ -22,14 +22,14 @@ jobs:
           platforms: |
             - name: "rp2040:rp2040"
               source-url: "https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json"
+          # KeyboardBLE is provided by the rp2040 core, not Library Manager.
           libraries: |
-            - name: KeyboardBLE
             - name: Adafruit GFX Library
             - name: Adafruit SSD1306
           # Path to your sketch directory containing the .ino file
           sketch-paths: |
             - .
-          # Uncomment if KeyboardBLE or other dependencies are not bundled
+          # Uncomment if additional dependencies are not bundled
           # libraries: |
           #   - name: KeyboardBLE
           cli-compile-flags: |
